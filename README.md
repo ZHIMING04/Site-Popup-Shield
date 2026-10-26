@@ -1,6 +1,6 @@
 # Site Popup Shield
 
-A lightweight, multi-layered Chrome / Edge (Manifest V3) extension designed to block aggressive popups, popunders, and unwanted redirect tabs on any target website.
+A lightweight, multi-layered Chrome / Edge (Manifest V3) extension designed to block aggressive popups, popunders, and unwanted redirect tabs on any target website — while smoothly allowing normal internal navigation.
 
 ---
 
@@ -41,13 +41,13 @@ Replace `example.com` with your target domain (e.g. `mysite.com`) in **3 files**
 
 ---
 
-## 🛡️ 3-Layer Defense Mechanism
+## 🛡️ Intelligent 3-Layer Defense
 
 | Layer | Component | What it does |
 |---|---|---|
-| **1. DOM Level** | `popup-guard.js` | Disables `window.open()` and cancels click / form events that target new tabs. |
-| **2. Network Level** | `rules.json` | Uses `declarativeNetRequest` to block cross-site frame navigation at the browser network layer. |
-| **3. Tab Level** | `background.js` | Monitors tab creation and immediately terminates any child tabs spawned by the target site. |
+| **1. DOM Level** | `popup-guard.js` | Blocks rogue `window.open()` and ad overlays from opening new tabs, while allowing normal clicks and internal same-domain links. |
+| **2. Network Level** | `rules.json` | Uses `declarativeNetRequest` to block cross-site frame navigation directly at the browser network layer. |
+| **3. Tab Level** | `background.js` | Inspects child tabs: keeps legitimate same-site tabs open, and immediately terminates external ad popups. |
 
 ---
 
@@ -55,7 +55,7 @@ Replace `example.com` with your target domain (e.g. `mysite.com`) in **3 files**
 
 - **100% Local**: No external scripts, no analytics, no remote tracking.
 - **Zero Data Collection**: Does not read, log, or upload your browsing history.
-- **Minimal Scope**: Only runs on the specific domain you configure.
+- **Minimal Scope**: Only operates on your configured domain.
 
 ---
 

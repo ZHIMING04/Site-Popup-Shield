@@ -3,7 +3,7 @@
   "name": "Site Popup Shield",
   "version": "1.0.0",
   "description": "Block cross-site navigation requests and unwanted tabs opened by the target website.",
-  "permissions": ["declarativeNetRequest"],
+  "permissions": ["declarativeNetRequest", "tabs"],
   "host_permissions": ["https://example.com/*", "https://*.example.com/*"],
   "background": {"service_worker": "background.js"},
   "declarative_net_request": {
