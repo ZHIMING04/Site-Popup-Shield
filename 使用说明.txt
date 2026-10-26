@@ -1,0 +1,21 @@
+适用：Chrome / Edge 桌面版浏览器。
+
+配置方法：
+将项目中的 example.com 替换为你需要防护的目标网站域名（共 3 处文件）：
+1. manifest.json（第 7 行与第 13 行）
+2. rules.json（initiatorDomains 与 excludedRequestDomains）
+3. background.js（isProtected 函数内部）
+
+安装步骤：
+1. 打开 Chrome 扩展页面 (chrome://extensions) 或 Edge (edge://extensions)。
+2. 开启右上角“开发者模式”。
+3. 点击“加载已解压的扩展程序”，选择包含 manifest.json 的项目文件夹。
+4. 刷新目标网站页面即可生效。
+
+防护机制：
+1. 页面级：阻止 window.open 弹窗及强制在新标签打开的链接。
+2. 网络级：基于 declarativeNetRequest 阻止从目标站点发起的外部跳转。
+3. 标签级：自动关闭由目标网站派生的新标签页。
+
+隐私说明：
+完全本地运行，不收集、不上传任何浏览数据。

@@ -1,0 +1,7 @@
+# Chrome unpacked extension cache
+_metadata/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+*.log
