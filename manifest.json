@@ -1,20 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Site Popup Shield",
-  "version": "1.0.0",
-  "description": "Block cross-site navigation requests and unwanted tabs opened by the target website.",
-  "permissions": ["declarativeNetRequest", "tabs"],
-  "host_permissions": ["https://example.com/*", "https://*.example.com/*"],
-  "background": {"service_worker": "background.js"},
-  "declarative_net_request": {
-    "rule_resources": [{"id": "popup_rules", "enabled": true, "path": "rules.json"}]
-  },
-  "content_scripts": [{
-    "matches": ["https://example.com/*", "https://*.example.com/*"],
-    "js": ["popup-guard.js"],
-    "run_at": "document_start",
-    "world": "MAIN",
-    "all_frames": true,
-    "match_origin_as_fallback": true
-  }]
+  "version": "1.1.0",
+  "minimum_chrome_version": "119",
+  "description": "Choose which websites to protect from unwanted popups and redirect tabs.",
+  "permissions": ["activeTab", "storage", "scripting", "declarativeNetRequest", "webNavigation"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "Site Popup Shield",
+    "default_popup": "popup.html"
+  }
 }

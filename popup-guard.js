@@ -1,25 +1,19 @@
 (() => {
   'use strict';
 
-  function getDomain(hostname) {
-    if (!hostname) return '';
-    const parts = hostname.toLowerCase().split('.');
-    return parts.length >= 2 ? parts.slice(-2).join('.') : hostname;
-  }
+  if (globalThis.__sitePopupShieldInstalled) return;
+  let sourceHost;
+  try {
+    const page = new URL(window.location.href);
+    sourceHost = page.hostname || new URL(globalThis.origin).hostname;
+  } catch { return; }
+  Object.defineProperty(globalThis, '__sitePopupShieldInstalled', { value: true });
 
   function isSameDomain(targetUrl) {
-    if (!targetUrl) return true;
     try {
-      const parsed = new URL(targetUrl, window.location.href);
-      if (['javascript:', 'data:', 'blob:', 'about:'].includes(parsed.protocol)) {
-        return false;
-      }
-      const currentBase = getDomain(window.location.hostname);
-      const targetBase = getDomain(parsed.hostname);
-      return currentBase === targetBase;
-    } catch {
-      return false;
-    }
+      const url = new URL(targetUrl || window.location.href, document.baseURI);
+      return ['http:', 'https:'].includes(url.protocol) && url.hostname === sourceHost;
+    } catch { return false; }
   }
 
   const opensContext = target => target && !['_self', '_parent', '_top'].includes(target.toLowerCase());
@@ -67,7 +61,7 @@
 
   // Intercept form submissions
   window.addEventListener('submit', event => {
-    const action = event.target.getAttribute('action') || window.location.href;
+    const action = event.submitter?.getAttribute('formaction') ?? event.target.getAttribute('action') ?? window.location.href;
     if (isSameDomain(action)) {
       return;
     }

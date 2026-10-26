@@ -1,64 +1,30 @@
 # Site Popup Shield
 
-A lightweight, multi-layered Chrome / Edge (Manifest V3) extension designed to block aggressive popups, popunders, and unwanted redirect tabs on any target website — while smoothly allowing normal internal navigation.
+A small Chrome / Edge extension that blocks unwanted popups on websites you choose. No Node.js or configuration files needed.
 
----
+## Install
 
-## 🚀 Quick Setup (Customize for Your Website)
+1. Download and extract this project.
+2. Open `chrome://extensions` or `edge://extensions`.
+3. Enable **Developer mode**.
+4. Choose **Load unpacked** and select this folder.
 
-Replace `example.com` with your target domain (e.g. `mysite.com`) in **3 files**:
+## Use
 
-1. **`manifest.json`**:
-   Update `host_permissions` and `matches`:
-   ```json
-   "host_permissions": ["https://mysite.com/*", "https://*.mysite.com/*"],
-   "matches": ["https://mysite.com/*", "https://*.mysite.com/*"]
-   ```
+1. Open a website and click the extension icon (pin it to the toolbar if needed).
+2. Click **Protect this website** and approve access to that website.
+3. Click **Refresh this page to apply** when ready.
 
-2. **`rules.json`**:
-   Update `initiatorDomains` and `excludedRequestDomains`:
-   ```json
-   "initiatorDomains": ["mysite.com"],
-   "excludedRequestDomains": ["mysite.com"]
-   ```
+Use **Turn off for this website** or **Remove** in the protected websites list to stop protection. Refresh any open pages of that website to remove the page-level guard. Multiple websites can be managed separately; settings persist on this device.
 
-3. **`background.js`**:
-   Update `isProtected()`:
-   ```javascript
-   return host === 'mysite.com' || host.endsWith('.mysite.com');
-   ```
+## What to expect
 
----
+- Browser **+** and **Ctrl+T** still work.
+- Page-opened same-host tabs are allowed; external or blank popup attempts are blocked or closed.
+- Websites are selected by the hostname displayed in the popup. Add other hostnames separately as needed.
+- Browser network domain rules also cover subdomains of the selected hostname.
+- Normal external links and cross-site redirects may also be blocked. Some popup techniques can escape detection; closing a tab does not guarantee that no request has already been made.
 
-## 📦 Installation
+## Privacy
 
-1. Open your browser's extension manager:
-   - **Chrome**: Navigate to `chrome://extensions`
-   - **Edge**: Navigate to `edge://extensions`
-2. Turn on **Developer mode** (toggle in the top-right corner).
-3. Click **Load unpacked** and select this folder.
-4. Refresh the target website to activate protection.
-
----
-
-## 🛡️ Intelligent 3-Layer Defense
-
-| Layer | Component | What it does |
-|---|---|---|
-| **1. DOM Level** | `popup-guard.js` | Blocks rogue `window.open()` and ad overlays from opening new tabs, while allowing normal clicks and internal same-domain links. |
-| **2. Network Level** | `rules.json` | Uses `declarativeNetRequest` to block cross-site frame navigation directly at the browser network layer. |
-| **3. Tab Level** | `background.js` | Inspects child tabs: keeps legitimate same-site tabs open, and immediately terminates external ad popups. |
-
----
-
-## 🔒 Privacy & Security
-
-- **100% Local**: No external scripts, no analytics, no remote tracking.
-- **Zero Data Collection**: Does not read, log, or upload your browsing history.
-- **Minimal Scope**: Only operates on your configured domain.
-
----
-
-## 📄 License
-
-MIT
+The extension requests website access when you enable protection. It reads tab URLs locally to apply rules and stores only your protected website list. No analytics or data uploads.

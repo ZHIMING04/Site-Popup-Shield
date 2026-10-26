@@ -5,3 +5,7 @@ _metadata/
 .DS_Store
 Thumbs.db
 *.log
+
+# Local previews and browser screenshots
+work/
+output/playwright/

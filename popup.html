@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Site Popup Shield</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="site-settings.js" defer></script>
+  <script src="popup.js" defer></script>
+</head>
+<body>
+  <header>
+    <div class="logo" aria-hidden="true">S</div>
+    <div><h1>Popup Shield</h1><p>Browse with fewer interruptions.</p></div>
+  </header>
+  <main>
+    <section class="current-site" aria-labelledby="site-heading">
+      <div class="eyebrow">THIS WEBSITE</div>
+      <h2 id="site-heading">Loading…</h2>
+      <div id="status" class="status">Checking protection</div>
+      <button id="toggle" class="primary" disabled>Loading…</button>
+      <p class="hint">Browser + and Ctrl+T remain available.</p>
+    </section>
+    <div id="feedback" role="status" aria-live="polite" hidden></div>
+    <button id="refresh" class="refresh" hidden>Refresh this page to apply</button>
+    <section class="saved-sites" aria-labelledby="saved-heading">
+      <div class="section-heading"><h2 id="saved-heading">Protected websites</h2><span id="count">0</span></div>
+      <p id="empty" class="empty">No websites added yet. Enable protection on a website to add it here.</p>
+      <ul id="sites" aria-label="Protected websites"></ul>
+    </section>
+  </main>
+  <footer>Settings stay on this device. Normal external links may also be blocked.</footer>
+</body>
+</html>
