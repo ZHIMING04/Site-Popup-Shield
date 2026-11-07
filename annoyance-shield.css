@@ -1,0 +1,48 @@
+/* Floating / Sticky Picture-in-Picture Video Players */
+[class*="floating-video" i],
+[id*="floating-video" i],
+[class*="sticky-player" i],
+[class*="sticky-video" i],
+[class*="pip-player" i],
+div[class*="pip-container" i],
+div[id*="connatix" i],
+div[class*="cnx-player" i],
+div[id*="primis" i],
+div[class*="primis-player" i],
+div[class*="anyclip-player" i],
+div[class*="vdo_box" i],
+div[id*="vdo_ai" i],
+div[class*="outbrain-pip" i],
+div[class*="floating-player" i],
+div[class*="sticky-video-container" i] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  max-height: 0 !important;
+}
+
+/* Newsletter, Email Signup, and Lead Capture Overlays */
+[class*="newsletter-modal" i],
+[id*="newsletter-modal" i],
+[class*="newsletter-popup" i],
+[id*="newsletter-popup" i],
+[class*="email-signup-modal" i],
+[class*="email-popup" i],
+[id*="email-signup" i],
+div[class*="klaviyo-form" i],
+div[class*="privy-popup" i],
+div[id*="privy-container" i],
+div[class*="om-holder" i],
+div[id*="om-" i],
+div[class*="sumo-popup" i],
+div[class*="sub-modal" i],
+div[class*="subscribe-popup" i],
+div[id*="subscribe-modal" i] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+

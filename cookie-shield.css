@@ -1,0 +1,64 @@
+/* Cookie consent banners, GDPR dialogs, CMP containers */
+#onetrust-consent-sdk,
+#onetrust-banner-sdk,
+#onetrust-pc-sdk,
+.onetrust-pc-dark-filter,
+#CybotCookiebotDialog,
+#CybotCookiebotDialogBodyUnderlay,
+.qc-cmp2-container,
+#qc-cmp2-ui,
+#didomi-host,
+.didomi-popup-container,
+.didomi-popup-backdrop,
+#usercentrics-root,
+.cc-window,
+.cc-banner,
+.cc-floating,
+.cc-theme-block,
+#cmpbox,
+#cmpbox2,
+[id*="sp_message_container_"],
+[id*="sp_message_notice_"],
+.sp_veil,
+[id*="cookie-banner" i],
+[id*="cookiebanner" i],
+[id*="cookie-notice" i],
+[id*="cookie-consent" i],
+[id*="cookie-law" i],
+[id*="cookie-bar" i],
+[class*="cookie-banner" i],
+[class*="cookiebanner" i],
+[class*="cookie-notice" i],
+[class*="cookie-consent" i],
+[class*="cookieConsent" i],
+[class*="cookie-bar" i],
+[id*="consent-banner" i],
+[class*="consent-banner" i],
+[id*="consent-modal" i],
+[class*="consent-modal" i],
+[id*="gdpr-banner" i],
+[class*="gdpr-banner" i],
+[id*="gdpr-consent" i],
+[class*="gdpr-consent" i],
+div[aria-label*="cookie consent" i],
+div[aria-label*="cookie policy" i],
+section[aria-label*="cookie" i] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  max-height: 0 !important;
+}
+
+/* Ensure backdrop covers do not block user clicks */
+.cookie-backdrop,
+.consent-backdrop,
+div[class*="cookie"][class*="backdrop"],
+div[class*="cookie"][class*="overlay"],
+div[class*="consent"][class*="backdrop"],
+div[class*="consent"][class*="overlay"] {
+  display: none !important;
+  pointer-events: none !important;
+}
+

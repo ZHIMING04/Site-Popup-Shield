@@ -3,6 +3,7 @@ importScripts('site-settings.js');
 const settings = globalThis.ShieldSettings;
 const pendingTabs = new Map();
 let sites = [];
+let siteOptions = {};
 let queue = Promise.resolve();
 
 function enqueue(operation) {
@@ -11,79 +12,112 @@ function enqueue(operation) {
   return result;
 }
 
-async function permittedSites(candidates) {
+async function permittedOriginSites(candidates) {
   const allowed = [];
   for (const site of candidates) {
-    if (await chrome.permissions.contains({ origins: settings.origins(site) })) allowed.push(site);
+    try {
+      if (await chrome.permissions.contains({ origins: settings.origins(site) })) {
+        allowed.push(site);
+      }
+    } catch {}
   }
   return allowed;
 }
 
-async function configure(candidates) {
+async function configure(candidates, options = siteOptions) {
+  // Declarative Net Request runs in browser network engine without needing host permissions
   const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
   await chrome.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: oldRules.map(rule => rule.id),
-    addRules: settings.rules(candidates),
+    addRules: settings.rules(candidates, options),
   });
+
+  // Content scripts (in-page DOM manipulation) require origin permissions
+  const originSites = await permittedOriginSites(candidates);
   const registered = await chrome.scripting.getRegisteredContentScripts();
-  const desired = settings.scripts(candidates);
-  const desiredIds = new Set(desired.map(script => script.id));
-  const stale = registered.filter(script => script.id.startsWith('shield-') && !desiredIds.has(script.id));
-  if (stale.length) await chrome.scripting.unregisterContentScripts({ ids: stale.map(script => script.id) });
-  const existing = new Set(registered.map(script => script.id));
-  const missing = desired.filter(script => !existing.has(script.id));
-  if (missing.length) await chrome.scripting.registerContentScripts(missing);
+  const desired = settings.scripts(originSites, options);
+
+  const existingShieldIds = registered.filter(script => script.id.startsWith('shield-')).map(script => script.id);
+  if (existingShieldIds.length) {
+    await chrome.scripting.unregisterContentScripts({ ids: existingShieldIds });
+  }
+  if (desired.length) {
+    await chrome.scripting.registerContentScripts(desired);
+  }
 }
 
-async function saveSites(candidates) {
+async function saveSites(candidates, options = siteOptions) {
   const normalized = settings.normalizeSites(candidates);
-  const allowed = await permittedSites(normalized);
-  const previous = sites;
+  const previousSites = sites;
+  const previousOptions = siteOptions;
+
+  const cleanedOptions = {};
+  for (const site of normalized) {
+    cleanedOptions[site] = settings.getOptions(site, options);
+  }
+
   try {
-    await configure(allowed);
-    await chrome.storage.local.set({ protectedSites: allowed });
-    sites = allowed;
+    await configure(normalized, cleanedOptions);
+    await chrome.storage.local.set({ protectedSites: normalized, siteOptions: cleanedOptions });
+    sites = normalized;
+    siteOptions = cleanedOptions;
   } catch (error) {
-    try { await configure(previous); }
+    try { await configure(previousSites, previousOptions); }
     catch (rollbackError) { console.error('[Popup Shield] Could not restore protection:', rollbackError); }
     throw error;
   }
+
   for (const [tabId, pending] of pendingTabs) {
-    if (!sites.includes(pending.sourceHost)) clearPending(tabId);
+    if (!sites.includes(pending.sourceHost) || !settings.getOptions(pending.sourceHost, siteOptions).popups) {
+      clearPending(tabId);
+    }
   }
-  return sites;
+  return { sites, siteOptions };
 }
 
 const ready = enqueue(async () => {
-  const stored = await chrome.storage.local.get({ protectedSites: [] });
-  await saveSites(stored.protectedSites);
+  const stored = await chrome.storage.local.get({ protectedSites: [], siteOptions: {} });
+  siteOptions = stored.siteOptions || {};
+  await saveSites(stored.protectedSites, siteOptions);
 });
 ready.catch(error => console.error('[Popup Shield] Initialization failed:', error));
 
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== chrome.runtime.id || !sender.url?.startsWith(chrome.runtime.getURL(''))) return;
-  if (!['getState', 'enableSite', 'disableSite'].includes(message?.type)) return;
+  if (!['getState', 'enableSite', 'disableSite', 'updateSiteOptions'].includes(message?.type)) return;
   enqueue(async () => {
     await ready;
     if (message.type === 'enableSite') {
       const [host] = settings.normalizeSites([message.hostname]);
-      if (!(await chrome.permissions.contains({ origins: settings.origins(host) }))) {
-        throw new Error('Website access was not granted. Please try enabling protection again.');
-      }
-      await saveSites([...sites, host]);
+      siteOptions[host] = settings.getOptions(host, siteOptions);
+      const nextSites = [...sites.filter(s => s !== host), host];
+      await saveSites(nextSites, siteOptions);
     }
     if (message.type === 'disableSite') {
       const [host] = settings.normalizeSites([message.hostname]);
-      await saveSites(sites.filter(site => site !== host));
-      await chrome.permissions.remove({ origins: settings.origins(host) });
+      const nextSites = sites.filter(site => site !== host);
+      delete siteOptions[host];
+      await saveSites(nextSites, siteOptions);
+      try {
+        if (await chrome.permissions.contains({ origins: settings.origins(host) })) {
+          await chrome.permissions.remove({ origins: settings.origins(host) });
+        }
+      } catch {}
     }
-    return { ok: true, sites };
+    if (message.type === 'updateSiteOptions') {
+      const [host] = settings.normalizeSites([message.hostname]);
+      if (sites.includes(host) && message.options) {
+        siteOptions[host] = settings.getOptions(host, { [host]: message.options });
+        await saveSites(sites, siteOptions);
+      }
+    }
+    return { ok: true, sites, siteOptions };
   }).then(respond, error => respond({ ok: false, error: error.message }));
   return true;
 });
 
 chrome.permissions.onRemoved.addListener(() => {
-  enqueue(() => saveSites(sites)).catch(error => console.error('[Popup Shield] Could not sync permissions:', error));
+  enqueue(() => saveSites(sites, siteOptions)).catch(error => console.error('[Popup Shield] Could not sync permissions:', error));
 });
 
 function isBrowserPage(url) {
@@ -104,13 +138,14 @@ async function closeTab(tabId) {
 }
 
 // Browser UI + / Ctrl+T tabs do not emit this page-navigation event.
+// webNavigation works without requiring host permissions!
 chrome.webNavigation.onCreatedNavigationTarget.addListener(async details => {
   await ready;
   if (details.sourceTabId < 0 || details.sourceTabId === details.tabId || isBrowserPage(details.url)) return;
   let opener;
   try { opener = await chrome.tabs.get(details.sourceTabId); } catch { return; }
   const sourceHost = settings.hostname(opener.url);
-  if (!sites.includes(sourceHost)) return;
+  if (!sites.includes(sourceHost) || !settings.getOptions(sourceHost, siteOptions).popups) return;
   const tabId = details.tabId;
   clearPending(tabId);
   if (sameHost(details.url, sourceHost)) return;
@@ -120,7 +155,7 @@ chrome.webNavigation.onCreatedNavigationTarget.addListener(async details => {
   }
   const timer = setTimeout(async () => {
     pendingTabs.delete(tabId);
-    if (!sites.includes(sourceHost)) return;
+    if (!sites.includes(sourceHost) || !settings.getOptions(sourceHost, siteOptions).popups) return;
     try {
       const tab = await chrome.tabs.get(tabId);
       const url = tab.pendingUrl || tab.url;
@@ -133,7 +168,10 @@ chrome.webNavigation.onCreatedNavigationTarget.addListener(async details => {
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   const pending = pendingTabs.get(tabId);
   if (!pending) return;
-  if (!sites.includes(pending.sourceHost)) { clearPending(tabId); return; }
+  if (!sites.includes(pending.sourceHost) || !settings.getOptions(pending.sourceHost, siteOptions).popups) {
+    clearPending(tabId);
+    return;
+  }
   const url = changeInfo.url || tab.pendingUrl || tab.url;
   if (!url || url === 'about:blank') return;
   clearPending(tabId);
