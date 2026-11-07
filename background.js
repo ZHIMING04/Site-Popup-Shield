@@ -2,6 +2,7 @@
 importScripts('site-settings.js');
 const settings = globalThis.ShieldSettings;
 const pendingTabs = new Map();
+const tabHosts = new Map();
 let sites = [];
 let siteOptions = {};
 let queue = Promise.resolve();
@@ -79,6 +80,15 @@ const ready = enqueue(async () => {
   const stored = await chrome.storage.local.get({ protectedSites: [], siteOptions: {} });
   siteOptions = stored.siteOptions || {};
   await saveSites(stored.protectedSites, siteOptions);
+
+  // Initialize in-memory tab hosts cache for fast synchronous lookup
+  try {
+    const currentTabs = await chrome.tabs.query({});
+    for (const t of currentTabs) {
+      const host = settings.hostname(t.url || t.pendingUrl);
+      if (host) tabHosts.set(t.id, host);
+    }
+  } catch {}
 });
 ready.catch(error => console.error('[Popup Shield] Initialization failed:', error));
 
@@ -137,44 +147,117 @@ async function closeTab(tabId) {
   try { await chrome.tabs.remove(tabId); } catch {}
 }
 
-// Browser UI + / Ctrl+T tabs do not emit this page-navigation event.
-// webNavigation works without requiring host permissions!
+async function getOpenerHost(openerTabId) {
+  if (!openerTabId) return null;
+  const cached = tabHosts.get(openerTabId);
+  if (cached) return cached;
+  try {
+    const opener = await chrome.tabs.get(openerTabId);
+    const host = settings.hostname(opener.url || opener.pendingUrl);
+    if (host) tabHosts.set(openerTabId, host);
+    return host;
+  } catch {
+    return null;
+  }
+}
+
+// 1. FAST-PATH: Intercept tab creation at the earliest microtask before rendering
+chrome.tabs.onCreated.addListener(async tab => {
+  if (!tab.openerTabId || tab.openerTabId === tab.id) return;
+  const sourceHost = await getOpenerHost(tab.openerTabId);
+  if (!sourceHost || !sites.includes(sourceHost) || !settings.getOptions(sourceHost, siteOptions).popups) return;
+
+  const targetUrl = tab.pendingUrl || tab.url;
+
+  // KEY FIX: Instantly pin focus to the opener tab so the browser never switches visual focus (no flash)
+  if (tab.active) {
+    try { await chrome.tabs.update(tab.openerTabId, { active: true }); } catch {}
+  }
+
+  // If destination is already an external site, close it immediately before it paints
+  if (targetUrl && !isBrowserPage(targetUrl)) {
+    if (!sameHost(targetUrl, sourceHost)) {
+      await closeTab(tab.id);
+      return;
+    }
+  }
+
+  // If blank, hold pending with aggressive 100ms timeout
+  const timer = setTimeout(async () => {
+    pendingTabs.delete(tab.id);
+    if (!sites.includes(sourceHost) || !settings.getOptions(sourceHost, siteOptions).popups) return;
+    try {
+      const cur = await chrome.tabs.get(tab.id);
+      const curUrl = cur.pendingUrl || cur.url;
+      if (!sameHost(curUrl, sourceHost) && !isBrowserPage(curUrl)) {
+        await closeTab(tab.id);
+      }
+    } catch {}
+  }, 100);
+
+  pendingTabs.set(tab.id, { timer, sourceHost });
+});
+
+// 2. BACKUP-PATH: WebNavigation event for navigation-triggered targets
 chrome.webNavigation.onCreatedNavigationTarget.addListener(async details => {
-  await ready;
   if (details.sourceTabId < 0 || details.sourceTabId === details.tabId || isBrowserPage(details.url)) return;
-  let opener;
-  try { opener = await chrome.tabs.get(details.sourceTabId); } catch { return; }
-  const sourceHost = settings.hostname(opener.url);
-  if (!sites.includes(sourceHost) || !settings.getOptions(sourceHost, siteOptions).popups) return;
+  const sourceHost = await getOpenerHost(details.sourceTabId);
+  if (!sourceHost || !sites.includes(sourceHost) || !settings.getOptions(sourceHost, siteOptions).popups) return;
+
   const tabId = details.tabId;
   clearPending(tabId);
+
+  // Allow same-domain navigation
   if (sameHost(details.url, sourceHost)) return;
+
+  // External target navigation -> close tab immediately and keep opener tab active
   if (details.url && details.url !== 'about:blank') {
+    try { await chrome.tabs.update(details.sourceTabId, { active: true }); } catch {}
     await closeTab(tabId);
     return;
   }
+
   const timer = setTimeout(async () => {
     pendingTabs.delete(tabId);
     if (!sites.includes(sourceHost) || !settings.getOptions(sourceHost, siteOptions).popups) return;
     try {
       const tab = await chrome.tabs.get(tabId);
       const url = tab.pendingUrl || tab.url;
-      if (!sameHost(url, sourceHost) && !isBrowserPage(url)) await closeTab(tabId);
+      if (!sameHost(url, sourceHost) && !isBrowserPage(url)) {
+        try { await chrome.tabs.update(details.sourceTabId, { active: true }); } catch {}
+        await closeTab(tabId);
+      }
     } catch {}
-  }, 600);
+  }, 100);
+
   pendingTabs.set(tabId, { timer, sourceHost });
 });
 
+// 3. Keep cache updated & track pending blank tab resolutions
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  const url = changeInfo.url || tab.url || tab.pendingUrl;
+  if (url) {
+    const host = settings.hostname(url);
+    if (host) tabHosts.set(tabId, host);
+    else tabHosts.delete(tabId);
+  }
+
   const pending = pendingTabs.get(tabId);
   if (!pending) return;
   if (!sites.includes(pending.sourceHost) || !settings.getOptions(pending.sourceHost, siteOptions).popups) {
     clearPending(tabId);
     return;
   }
-  const url = changeInfo.url || tab.pendingUrl || tab.url;
+
   if (!url || url === 'about:blank') return;
   clearPending(tabId);
-  if (!sameHost(url, pending.sourceHost) && !isBrowserPage(url)) await closeTab(tabId);
+
+  if (!sameHost(url, pending.sourceHost) && !isBrowserPage(url)) {
+    await closeTab(tabId);
+  }
 });
-chrome.tabs.onRemoved.addListener(clearPending);
+
+chrome.tabs.onRemoved.addListener(tabId => {
+  tabHosts.delete(tabId);
+  clearPending(tabId);
+});
