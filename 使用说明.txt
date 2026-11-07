@@ -25,3 +25,6 @@ Site Popup Shield — Chrome / Edge 防弹窗与增强防护扩展
 2. 点击 Protect this website（即刻生效，无任何权限弹窗）。
 3. 点击 Reload 刷新页面。
 4. （可选）展开 Protection options 开启页内清理。
+
+注意 / Tradeoff：
+严格的跳转限制可能会导致部分依赖跨站弹窗的正常功能（如第三方账号快捷登录、外部支付收银台等）无法弹出。遇到此类情况，只需点击“Turn off protection”暂时关闭防护即可。

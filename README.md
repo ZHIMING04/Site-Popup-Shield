@@ -18,6 +18,8 @@ If you want to clean up elements *inside* a specific webpage:
 - **Block Floating Videos & Newsletter Overlays**: Hides sticky corner PIP players and email lead-capture popups.
 - *Requires Page Access*: When you toggle on either of these in **Protection options**, the browser will ask for page access permission for that specific website to allow DOM cosmetic cleaning.
 
+---
+
 ## Install
 
 1. Download or clone this repository.
@@ -32,8 +34,9 @@ If you want to clean up elements *inside* a specific webpage:
 3. Click **Reload** to apply.
 4. *(Optional)* Open **Protection options** to enable in-page Cookie Banner or Floating Video cleaning if desired.
 
----
+> **Tradeoff / Note**: Strict redirect blocking may prevent legitimate external actions (such as third-party SSO logins or external payment portals) from opening. Simply click **Turn off protection** temporarily to complete those actions.
 
+---
 
 ### Component Breakdown
 
@@ -50,9 +53,16 @@ If you want to clean up elements *inside* a specific webpage:
 
 ---
 
+
 ## Contributing
 
 Contributions from the community are warmly welcome! Whether you want to improve banner detection, expand tracker blocking, optimize UI/UX, or fix edge-case bugs, your help is appreciated.
+
+- **Add Annoyance & Cookie Selectors**: Add container selectors to `cookie-shield.css` or `annoyance-shield.css`.
+- **Expand Tracker & Ad Lists**: Suggest heavy third-party tracking or video ad domains in `site-settings.js`.
+- **Edge Cases & Compatibility**: Report sites where legitimate same-domain popups were mistakenly blocked.
+
+---
 
 ## License & Privacy
 
