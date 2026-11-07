@@ -9,26 +9,96 @@
   <script src="popup.js" defer></script>
 </head>
 <body>
-  <header>
-    <div class="logo" aria-hidden="true">S</div>
-    <div><h1>Popup Shield</h1><p>Browse with fewer interruptions.</p></div>
+  <header class="app-header">
+    <div class="brand">
+      <svg class="brand-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span class="brand-title">Popup Shield</span>
+    </div>
+    <span id="site-count-pill" class="badge-pill">0 protected</span>
   </header>
+
   <main>
-    <section class="current-site" aria-labelledby="site-heading">
-      <div class="eyebrow">THIS WEBSITE</div>
-      <h2 id="site-heading">Loading…</h2>
-      <div id="status" class="status">Checking protection</div>
-      <button id="toggle" class="primary" disabled>Loading…</button>
-      <p class="hint">Browser + and Ctrl+T remain available.</p>
+    <section class="site-card">
+      <div class="site-info">
+        <h1 id="site-heading" class="site-name">Loading…</h1>
+        <div class="status-indicator">
+          <span id="status-dot" class="status-dot"></span>
+          <span id="status" class="status-label">Checking…</span>
+          <span id="mode-badge" class="badge-mini" hidden>Standard</span>
+        </div>
+      </div>
+
+      <button id="toggle" class="btn-action" disabled>Loading…</button>
+
+      <details id="features-details" class="features-details" hidden>
+        <summary class="features-summary">
+          <span>Protection options</span>
+          <svg class="chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </summary>
+        <div class="features-list">
+          <label class="feature-row">
+            <div class="feature-text">
+              <span class="feature-name">Popups & redirects</span>
+              <span class="feature-hint">Zero data access needed</span>
+            </div>
+            <span class="switch">
+              <input type="checkbox" id="feature-popups" checked>
+              <span class="slider"></span>
+            </span>
+          </label>
+          <label class="feature-row">
+            <div class="feature-text">
+              <span class="feature-name">Speed boost</span>
+              <span class="feature-hint">Blocks ad networks via DNR (Zero data access)</span>
+            </div>
+            <span class="switch">
+              <input type="checkbox" id="feature-speed" checked>
+              <span class="slider"></span>
+            </span>
+          </label>
+          <label class="feature-row">
+            <div class="feature-text">
+              <span class="feature-name">Cookie consent banners</span>
+              <span class="feature-hint">In-page cleaner (Requires page access)</span>
+            </div>
+            <span class="switch">
+              <input type="checkbox" id="feature-cookies">
+              <span class="slider"></span>
+            </span>
+          </label>
+          <label class="feature-row">
+            <div class="feature-text">
+              <span class="feature-name">Floating videos & overlays</span>
+              <span class="feature-hint">In-page cleaner (Requires page access)</span>
+            </div>
+            <span class="switch">
+              <input type="checkbox" id="feature-annoyances">
+              <span class="slider"></span>
+            </span>
+          </label>
+        </div>
+      </details>
     </section>
-    <div id="feedback" role="status" aria-live="polite" hidden></div>
-    <button id="refresh" class="refresh" hidden>Refresh this page to apply</button>
-    <section class="saved-sites" aria-labelledby="saved-heading">
-      <div class="section-heading"><h2 id="saved-heading">Protected websites</h2><span id="count">0</span></div>
-      <p id="empty" class="empty">No websites added yet. Enable protection on a website to add it here.</p>
-      <ul id="sites" aria-label="Protected websites"></ul>
+
+    <div id="reload-banner" class="reload-banner" hidden>
+      <span class="reload-text">Reload page to apply changes</span>
+      <button id="refresh" class="btn-reload">Reload</button>
+    </div>
+
+    <div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
+
+    <section class="sites-section">
+      <div class="sites-header">
+        <span class="sites-title">Protected websites</span>
+        <span id="count" class="count-text">0</span>
+      </div>
+      <p id="empty" class="empty-hint">No websites added yet.</p>
+      <ul id="sites" class="sites-list"></ul>
     </section>
   </main>
-  <footer>Settings stay on this device. Normal external links may also be blocked.</footer>
 </body>
 </html>
